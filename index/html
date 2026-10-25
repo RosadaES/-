@@ -1,0 +1,670 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+<meta charset="UTF-8">
+<title>Стіч вчить літери 🌴</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; user-select: none; }
+  body {
+    font-family: 'Comic Sans MS', 'Trebuchet MS', sans-serif;
+    overflow: hidden;
+    height: 100vh;
+    background: #87CEEB;
+  }
+  #game {
+    position: relative;
+    width: 100vw;
+    height: 100vh;
+    background-size: cover;
+    background-position: center;
+    background-image: url('https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=1600');
+    overflow: hidden;
+  }
+  #hero {
+    position: absolute;
+    bottom: 22%;
+    left: 3%;
+    width: 340px;
+    height: auto;
+    z-index: 5;
+    filter: drop-shadow(6px 6px 10px rgba(0,0,0,0.5));
+    transition: transform 0.3s;
+  }
+  #hero.happy { transform: scale(1.12) rotate(-5deg); }
+  #hero.sad { transform: scale(0.9) rotate(5deg); }
+  #coconut {
+    position: absolute;
+    top: 42%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 280px;
+    height: 280px;
+    cursor: pointer;
+    z-index: 10;
+    transition: transform 0.2s;
+    filter: drop-shadow(0 10px 18px rgba(0,0,0,0.5));
+  }
+  #coconut:hover { transform: translate(-50%, -50%) scale(1.1); }
+  #coconut:active { transform: translate(-50%, -50%) scale(0.93); }
+  #coconut.hidden { display: none; }
+  #coconut img { width: 100%; height: 100%; object-fit: contain; }
+  #picture {
+    position: absolute;
+    top: 28%;
+    left: 50%;
+    transform: translate(-50%, -50%) scale(0);
+    width: 360px;
+    height: 360px;
+    z-index: 15;
+    border-radius: 24px;
+    border: 10px solid #fff;
+    box-shadow: 0 12px 40px rgba(0,0,0,0.5);
+    background: #fff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+  }
+  #picture.show { transform: translate(-50%, -50%) scale(1); }
+  #picture img {
+    max-width: 95%;
+    max-height: 95%;
+    border-radius: 14px;
+    object-fit: contain;
+  }
+  #baskets {
+    position: absolute;
+    bottom: 1%;
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    gap: 50px;
+    z-index: 8;
+  }
+  .basket {
+    width: 240px;
+    height: 260px;
+    position: relative;
+    cursor: pointer;
+    transition: transform 0.2s;
+    filter: drop-shadow(0 8px 14px rgba(0,0,0,0.4));
+  }
+  .basket:hover { transform: translateY(-14px) scale(1.07); }
+  .basket img { width: 100%; height: 100%; object-fit: contain; }
+  .basket .letter {
+    position: absolute;
+    top: 28%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    font-size: 90px;
+    font-weight: 900;
+    color: #fff;
+    text-shadow: 4px 4px 0 #000, -3px -3px 0 #000, 3px -3px 0 #000, -3px 3px 0 #000;
+    pointer-events: none;
+  }
+  #score {
+    position: absolute;
+    top: 20px;
+    right: 20px;
+    background: rgba(255,255,255,0.92);
+    padding: 14px 24px;
+    border-radius: 30px;
+    font-size: 26px;
+    font-weight: bold;
+    color: #ff6b9d;
+    box-shadow: 0 4px 14px rgba(0,0,0,0.2);
+    z-index: 20;
+  }
+  #feedback {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    font-size: 140px;
+    z-index: 50;
+    opacity: 0;
+    pointer-events: none;
+  }
+  #feedback.show { animation: pop 0.8s forwards; }
+  @keyframes pop {
+    0% { transform: translate(-50%, -50%) scale(0); opacity: 1; }
+    50% { transform: translate(-50%, -50%) scale(1.4); opacity: 1; }
+    100% { transform: translate(-50%, -50%) scale(1); opacity: 0; }
+  }
+  #settingsBtn {
+    position: absolute;
+    top: 20px;
+    left: 20px;
+    width: 56px;
+    height: 56px;
+    border-radius: 50%;
+    background: rgba(255,255,255,0.92);
+    border: none;
+    font-size: 28px;
+    cursor: pointer;
+    z-index: 30;
+    box-shadow: 0 4px 14px rgba(0,0,0,0.2);
+  }
+  #settings {
+    position: absolute;
+    top: 0;
+    left: -500px;
+    width: 480px;
+    height: 100vh;
+    background: rgba(255, 243, 224, 0.98);
+    padding: 20px;
+    overflow-y: auto;
+    transition: left 0.4s;
+    z-index: 40;
+    box-shadow: 4px 0 24px rgba(0,0,0,0.3);
+  }
+  #settings.open { left: 0; }
+  #settings h2 { color: #ff6b9d; margin-bottom: 12px; font-size: 22px; }
+  #settings h3 { color: #4a90e2; margin: 18px 0 8px; font-size: 17px; border-bottom: 2px solid #4a90e2; padding-bottom: 4px; }
+  .setting-row {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    margin-bottom: 12px;
+    background: rgba(255,255,255,0.6);
+    padding: 12px;
+    border-radius: 12px;
+  }
+  .setting-row label { font-weight: bold; font-size: 14px; color: #333; }
+  .setting-row input[type="text"], .setting-row input[type="url"] {
+    padding: 7px;
+    border: 2px solid #4a90e2;
+    border-radius: 8px;
+    font-size: 13px;
+  }
+  .setting-row input[type="file"] { font-size: 12px; }
+  .setting-row .preview {
+    width: 80px;
+    height: 80px;
+    object-fit: contain;
+    border: 2px dashed #ccc;
+    border-radius: 8px;
+    background: #fff;
+  }
+  .hint { font-size: 11px; color: #666; font-style: italic; }
+  .btn-row { display: flex; gap: 8px; margin-top: 15px; }
+  .btn {
+    flex: 1;
+    padding: 12px;
+    border: none;
+    border-radius: 10px;
+    font-weight: bold;
+    cursor: pointer;
+    font-size: 15px;
+  }
+  .btn-save { background: #4CAF50; color: white; }
+  .btn-reset { background: #f44336; color: white; }
+  .btn-close { background: #888; color: white; }
+  .btn:hover { opacity: 0.85; }
+  #closeSettings {
+    position: absolute;
+    top: 12px;
+    right: 12px;
+    background: #ff6b9d;
+    color: white;
+    border: none;
+    width: 34px;
+    height: 34px;
+    border-radius: 50%;
+    cursor: pointer;
+    font-weight: bold;
+    font-size: 16px;
+  }
+  .img-list { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px; }
+  .img-item {
+    position: relative;
+    width: 90px;
+    height: 90px;
+    border: 3px solid #4a90e2;
+    border-radius: 10px;
+    overflow: hidden;
+    background: #fff;
+  }
+  .img-item img { width: 100%; height: 100%; object-fit: contain; }
+  .img-item .del-img {
+    position: absolute;
+    top: 2px;
+    right: 2px;
+    width: 22px;
+    height: 22px;
+    background: #f44336;
+    color: #fff;
+    border: none;
+    border-radius: 50%;
+    cursor: pointer;
+    font-size: 13px;
+    font-weight: bold;
+    line-height: 22px;
+    text-align: center;
+    padding: 0;
+  }
+  .add-img-row { display: flex; gap: 6px; margin-top: 6px; align-items: center; }
+  .add-img-row input[type="url"] {
+    flex: 1;
+    padding: 6px;
+    border: 2px solid #4CAF50;
+    border-radius: 8px;
+    font-size: 12px;
+  }
+  .add-img-row button {
+    padding: 6px 12px;
+    background: #4CAF50;
+    color: #fff;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    font-weight: bold;
+    font-size: 13px;
+    white-space: nowrap;
+  }
+</style>
+</head>
+<body>
+
+<div id="game">
+  <img id="hero" src="" alt="Герой">
+  <div id="score">⭐ <span id="scoreVal">0</span></div>
+  <button id="settingsBtn" title="Налаштування">⚙️</button>
+  <div id="coconut" title="Натисни!"></div>
+  <div id="picture"><img id="pictureImg" src=""></div>
+  <div id="baskets">
+    <div class="basket" data-letter="A"><img class="basketImg" src=""><span class="letter">А</span></div>
+    <div class="basket" data-letter="O"><img class="basketImg" src=""><span class="letter">О</span></div>
+    <div class="basket" data-letter="U"><img class="basketImg" src=""><span class="letter">У</span></div>
+  </div>
+  <div id="feedback"></div>
+</div>
+
+<div id="settings">
+  <button id="closeSettings">✕</button>
+  <h2>🎨 Налаштування гри</h2>
+  <p class="hint">Вставте URL або завантажте файл з комп'ютера.</p>
+
+  <h3>🌅 Фон</h3>
+  <div class="setting-row">
+    <label>URL:</label>
+    <input type="url" id="setBgUrl" placeholder="https://...">
+    <label>Або файл:</label>
+    <input type="file" id="setBgFile" accept="image/*">
+    <img class="preview" id="prevBg">
+  </div>
+
+  <h3>👾 Герой</h3>
+  <div class="setting-row">
+    <label>URL:</label>
+    <input type="url" id="setHeroUrl" placeholder="https://...">
+    <label>Або файл:</label>
+    <input type="file" id="setHeroFile" accept="image/*">
+    <img class="preview" id="prevHero">
+  </div>
+
+  <h3>🥥 Кнопка-кокос</h3>
+  <div class="setting-row">
+    <label>URL:</label>
+    <input type="url" id="setCoconutUrl" placeholder="https://...">
+    <label>Або файл:</label>
+    <input type="file" id="setCoconutFile" accept="image/*">
+    <img class="preview" id="prevCoconut">
+  </div>
+
+  <h3>🧺 Кошик «<span class="basketLabelA">А</span>»</h3>
+  <div class="setting-row">
+    <label>URL кошика:</label>
+    <input type="url" id="setBasketAUrl" placeholder="https://...">
+    <label>Або файл:</label>
+    <input type="file" id="setBasketAFile" accept="image/*">
+    <label>Літера:</label>
+    <input type="text" id="setLetterA" maxlength="3" value="А">
+    <img class="preview" id="prevBasketA">
+  </div>
+  <div class="setting-row">
+    <label>🖼️ Картинки для цієї літери:</label>
+    <div class="img-list" id="imgListA"></div>
+    <div class="add-img-row">
+      <input type="url" id="addImgAUrl" placeholder="URL картинки...">
+      <button onclick="addImageFromUrl('A')">+ URL</button>
+    </div>
+    <div class="add-img-row">
+      <input type="file" id="addImgAFile" accept="image/*">
+      <button onclick="addImageFromFile('A')">+ Файл</button>
+    </div>
+  </div>
+
+  <h3>🧺 Кошик «<span class="basketLabelO">О</span>»</h3>
+  <div class="setting-row">
+    <label>URL кошика:</label>
+    <input type="url" id="setBasketOUrl" placeholder="https://...">
+    <label>Або файл:</label>
+    <input type="file" id="setBasketOFile" accept="image/*">
+    <label>Літера:</label>
+    <input type="text" id="setLetterO" maxlength="3" value="О">
+    <img class="preview" id="prevBasketO">
+  </div>
+  <div class="setting-row">
+    <label>🖼️ Картинки для цієї літери:</label>
+    <div class="img-list" id="imgListO"></div>
+    <div class="add-img-row">
+      <input type="url" id="addImgOUrl" placeholder="URL картинки...">
+      <button onclick="addImageFromUrl('O')">+ URL</button>
+    </div>
+    <div class="add-img-row">
+      <input type="file" id="addImgOFile" accept="image/*">
+      <button onclick="addImageFromFile('O')">+ Файл</button>
+    </div>
+  </div>
+
+  <h3>🧺 Кошик «<span class="basketLabelU">У</span>»</h3>
+  <div class="setting-row">
+    <label>URL кошика:</label>
+    <input type="url" id="setBasketUUrl" placeholder="https://...">
+    <label>Або файл:</label>
+    <input type="file" id="setBasketUFile" accept="image/*">
+    <label>Літера:</label>
+    <input type="text" id="setLetterU" maxlength="3" value="У">
+    <img class="preview" id="prevBasketU">
+  </div>
+  <div class="setting-row">
+    <label>🖼️ Картинки для цієї літери:</label>
+    <div class="img-list" id="imgListU"></div>
+    <div class="add-img-row">
+      <input type="url" id="addImgUUrl" placeholder="URL картинки...">
+      <button onclick="addImageFromUrl('U')">+ URL</button>
+    </div>
+    <div class="add-img-row">
+      <input type="file" id="addImgUFile" accept="image/*">
+      <button onclick="addImageFromFile('U')">+ Файл</button>
+    </div>
+  </div>
+
+  <div class="btn-row">
+    <button class="btn btn-save" id="saveBtn">💾 Зберегти</button>
+    <button class="btn btn-reset" id="resetBtn">🔄 Скинути</button>
+  </div>
+  <div class="btn-row">
+    <button class="btn btn-close" id="closeBtn2">Закрити</button>
+  </div>
+</div>
+
+<script>
+// ==================== DEFAULTS ====================
+const DEFAULTS = {
+  bg: 'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=1600',
+  hero: 'https://upload.wikimedia.org/wikipedia/en/thumb/c/c8/Stitch_%28Lilo_%26_Stitch%29.svg/220px-Stitch_%28Lilo_%26_Stitch%29.svg.png',
+  coconut: 'https://cdn-icons-png.flaticon.com/512/3503/3503808.png',
+  basketA: 'https://cdn-icons-png.flaticon.com/512/3587/3587021.png',
+  basketO: 'https://cdn-icons-png.flaticon.com/512/3587/3587021.png',
+  basketU: 'https://cdn-icons-png.flaticon.com/512/3587/3587021.png',
+  letterA: 'А',
+  letterO: 'О',
+  letterU: 'У',
+  imagesA: [
+    'https://cdn-icons-png.flaticon.com/512/3503/3503795.png',
+    'https://cdn-icons-png.flaticon.com/512/2921/2921222.png',
+    'https://cdn-icons-png.flaticon.com/512/3174/3174728.png'
+  ],
+  imagesO: [
+    'https://cdn-icons-png.flaticon.com/512/3082/3082113.png',
+    'https://cdn-icons-png.flaticon.com/512/415/415733.png',
+    'https://cdn-icons-png.flaticon.com/512/2351/2351916.png'
+  ],
+  imagesU: [
+    'https://cdn-icons-png.flaticon.com/512/3503/3503817.png',
+    'https://cdn-icons-png.flaticon.com/512/2756/2756798.png',
+    'https://cdn-icons-png.flaticon.com/512/3174/3174724.png'
+  ]
+};
+
+// ==================== CONFIG ====================
+let config = JSON.parse(JSON.stringify(DEFAULTS));
+const saved = localStorage.getItem('stichGameConfigV2');
+if (saved) {
+  try {
+    const parsed = JSON.parse(saved);
+    config = { ...DEFAULTS, ...parsed };
+    if (!Array.isArray(config.imagesA)) config.imagesA = [...DEFAULTS.imagesA];
+    if (!Array.isArray(config.imagesO)) config.imagesO = [...DEFAULTS.imagesO];
+    if (!Array.isArray(config.imagesU)) config.imagesU = [...DEFAULTS.imagesU];
+  } catch(e) {}
+}
+
+const urlParams = new URLSearchParams(window.location.search);
+['bg','hero','coconut','basketA','basketO','basketU','letterA','letterO','letterU'].forEach(k => {
+  if (urlParams.has(k)) config[k] = urlParams.get(k);
+});
+
+// ==================== APPLY ====================
+function applyConfig() {
+  document.getElementById('game').style.backgroundImage = `url('${config.bg}')`;
+  document.getElementById('hero').src = config.hero;
+  document.getElementById('coconut').innerHTML = `<img src="${config.coconut}">`;
+
+  const map = { A: 'basketA', O: 'basketO', U: 'basketU' };
+  const lmap = { A: 'letterA', O: 'letterO', U: 'letterU' };
+  document.querySelectorAll('.basket').forEach(b => {
+    const k = b.dataset.letter;
+    b.querySelector('.basketImg').src = config[map[k]];
+    b.querySelector('.letter').textContent = config[lmap[k]];
+  });
+
+  document.querySelectorAll('.basketLabelA').forEach(el => el.textContent = config.letterA);
+  document.querySelectorAll('.basketLabelO').forEach(el => el.textContent = config.letterO);
+  document.querySelectorAll('.basketLabelU').forEach(el => el.textContent = config.letterU);
+}
+applyConfig();
+
+// ==================== GAME LOGIC ====================
+const letters = ['A', 'O', 'U'];
+let currentLetter = null;
+let score = 0;
+
+// 🆕 Зберігаємо останню показану картинку, щоб не повторювалась підряд
+let lastShownImage = null;
+
+const coconutEl = document.getElementById('coconut');
+const pictureEl = document.getElementById('picture');
+const pictureImg = document.getElementById('pictureImg');
+const feedbackEl = document.getElementById('feedback');
+const scoreVal = document.getElementById('scoreVal');
+const heroEl = document.getElementById('hero');
+
+function showFeedback(emoji) {
+  feedbackEl.textContent = emoji;
+  feedbackEl.classList.remove('show');
+  void feedbackEl.offsetWidth;
+  feedbackEl.classList.add('show');
+}
+
+// 🆕 НОВА ЛОГІКА: рандом без повторень підряд
+function pickRandomImage() {
+  // Спочатку обираємо літеру
+  currentLetter = letters[Math.floor(Math.random() * letters.length)];
+  const imgArr = config['images' + currentLetter];
+
+  if (!imgArr || imgArr.length === 0) return '';
+
+  // Якщо в категорії лише 1 картинка — нічого не вдієш, показуємо її
+  if (imgArr.length === 1) return imgArr[0];
+
+  // Інакше вибираємо таку, що не збігається з останньою
+  let img;
+  let attempts = 0;
+  do {
+    img = imgArr[Math.floor(Math.random() * imgArr.length)];
+    attempts++;
+    // Захист від нескінченного циклу (малоймовірний, але для надійності)
+    if (attempts > 20) break;
+  } while (img === lastShownImage);
+
+  return img;
+}
+
+coconutEl.addEventListener('click', () => {
+  const img = pickRandomImage();
+  pictureImg.src = img;
+  lastShownImage = img; // 🆕 запам'ятовуємо
+  coconutEl.classList.add('hidden');
+  pictureEl.classList.add('show');
+});
+
+document.querySelectorAll('.basket').forEach(b => {
+  b.addEventListener('click', () => {
+    if (!currentLetter) return;
+    const chosen = b.dataset.letter;
+    if (chosen === currentLetter) {
+      score++;
+      scoreVal.textContent = score;
+      showFeedback('✅');
+      heroEl.classList.add('happy');
+      setTimeout(() => heroEl.classList.remove('happy'), 600);
+    } else {
+      score = Math.max(0, score - 1);
+      scoreVal.textContent = score;
+      showFeedback('❌');
+      heroEl.classList.add('sad');
+      setTimeout(() => heroEl.classList.remove('sad'), 600);
+    }
+    currentLetter = null;
+    setTimeout(() => {
+      pictureEl.classList.remove('show');
+      coconutEl.classList.remove('hidden');
+    }, 800);
+  });
+});
+
+// ==================== SETTINGS PANEL ====================
+const settings = document.getElementById('settings');
+document.getElementById('settingsBtn').onclick = () => { fillInputs(); settings.classList.add('open'); };
+document.getElementById('closeSettings').onclick = () => settings.classList.remove('open');
+document.getElementById('closeBtn2').onclick = () => settings.classList.remove('open');
+
+function fillInputs() {
+  const isData = v => v && v.startsWith('data:');
+  document.getElementById('setBgUrl').value = isData(config.bg) ? '' : config.bg;
+  document.getElementById('setHeroUrl').value = isData(config.hero) ? '' : config.hero;
+  document.getElementById('setCoconutUrl').value = isData(config.coconut) ? '' : config.coconut;
+  document.getElementById('setBasketAUrl').value = isData(config.basketA) ? '' : config.basketA;
+  document.getElementById('setBasketOUrl').value = isData(config.basketO) ? '' : config.basketO;
+  document.getElementById('setBasketUUrl').value = isData(config.basketU) ? '' : config.basketU;
+  document.getElementById('setLetterA').value = config.letterA;
+  document.getElementById('setLetterO').value = config.letterO;
+  document.getElementById('setLetterU').value = config.letterU;
+
+  document.getElementById('prevBg').src = config.bg;
+  document.getElementById('prevHero').src = config.hero;
+  document.getElementById('prevCoconut').src = config.coconut;
+  document.getElementById('prevBasketA').src = config.basketA;
+  document.getElementById('prevBasketO').src = config.basketO;
+  document.getElementById('prevBasketU').src = config.basketU;
+
+  renderImageLists();
+}
+
+// ==================== IMAGE LISTS ====================
+function renderImageLists() {
+  ['A','O','U'].forEach(L => {
+    const container = document.getElementById('imgList' + L);
+    container.innerHTML = '';
+    const arr = config['images' + L] || [];
+    arr.forEach((src, i) => {
+      const item = document.createElement('div');
+      item.className = 'img-item';
+      item.innerHTML = `<img src="${src}"><button class="del-img" onclick="removeImage('${L}',${i})">✕</button>`;
+      container.appendChild(item);
+    });
+  });
+}
+
+function removeImage(L, index) {
+  config['images' + L].splice(index, 1);
+  renderImageLists();
+}
+
+function addImageFromUrl(L) {
+  const input = document.getElementById('addImg' + L + 'Url');
+  const url = input.value.trim();
+  if (!url) return;
+  config['images' + L].push(url);
+  input.value = '';
+  renderImageLists();
+}
+
+function addImageFromFile(L) {
+  const input = document.getElementById('addImg' + L + 'File');
+  const file = input.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = ev => {
+    config['images' + L].push(ev.target.result);
+    renderImageLists();
+  };
+  reader.readAsDataURL(file);
+  input.value = '';
+}
+
+// ==================== BIND SINGLE SETTINGS ====================
+function bindFile(inputId, previewId, key) {
+  document.getElementById(inputId).addEventListener('change', e => {
+    const file = e.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = ev => {
+      config[key] = ev.target.result;
+      document.getElementById(previewId).src = ev.target.result;
+    };
+    reader.readAsDataURL(file);
+  });
+}
+function bindUrl(inputId, previewId, key) {
+  document.getElementById(inputId).addEventListener('change', e => {
+    if (e.target.value.trim()) {
+      config[key] = e.target.value.trim();
+      document.getElementById(previewId).src = e.target.value.trim();
+    }
+  });
+}
+
+bindFile('setBgFile', 'prevBg', 'bg');
+bindFile('setHeroFile', 'prevHero', 'hero');
+bindFile('setCoconutFile', 'prevCoconut', 'coconut');
+bindFile('setBasketAFile', 'prevBasketA', 'basketA');
+bindFile('setBasketOFile', 'prevBasketO', 'basketO');
+bindFile('setBasketUFile', 'prevBasketU', 'basketU');
+
+bindUrl('setBgUrl', 'prevBg', 'bg');
+bindUrl('setHeroUrl', 'prevHero', 'hero');
+bindUrl('setCoconutUrl', 'prevCoconut', 'coconut');
+bindUrl('setBasketAUrl', 'prevBasketA', 'basketA');
+bindUrl('setBasketOUrl', 'prevBasketO', 'basketO');
+bindUrl('setBasketUUrl', 'prevBasketU', 'basketU');
+
+['A','O','U'].forEach(L => {
+  const uk = L === 'A' ? 'А' : L === 'O' ? 'О' : 'У';
+  document.getElementById('setLetter' + L).addEventListener('input', e => {
+    config['letter' + L] = e.target.value.toUpperCase() || uk;
+  });
+});
+
+// ==================== SAVE / RESET ====================
+document.getElementById('saveBtn').onclick = () => {
+  localStorage.setItem('stichGameConfigV2', JSON.stringify(config));
+  applyConfig();
+  alert('✅ Збережено!');
+  settings.classList.remove('open');
+};
+
+document.getElementById('resetBtn').onclick = () => {
+  if (confirm('Скинути все до стандартних налаштувань?')) {
+    localStorage.removeItem('stichGameConfigV2');
+    config = JSON.parse(JSON.stringify(DEFAULTS));
+    fillInputs();
+    applyConfig();
+  }
+};
+</script>
+</body>
+</html>
